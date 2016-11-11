@@ -46,6 +46,12 @@ def parse_page(html, name = None, price = None, categories = None):
     """
 
     soup = BeautifulSoup(html, 'html.parser')
+    results = []
+    attr_review = {'itemprop':'review'}
+    attr_date = {'itemprop':'datePublished'}
+    attr_rate = {'itemprop':'ratingValue'}
+    attr_text = {'itemprop':'description'}
+    attr_user = {'itemprop': 'author'}
 
     if name == None:
         name = soup.find('h1').text.strip()
@@ -53,12 +59,6 @@ def parse_page(html, name = None, price = None, categories = None):
         price = len(price_category.find('span', 'business-attribute price-range'))
         categories = ','.join([c.text for c in price_category.find('span', 'category-str-list').findAll('a')])
 
-    results = []
-    attr_review = {'itemprop':'review'}
-    attr_date = {'itemprop':'datePublished'}
-    attr_rate = {'itemprop':'ratingValue'}
-    attr_text = {'itemprop':'description'}
-    attr_user = {'itemprop': 'author'}
     for review in soup.findAll('div', attrs = attr_review):
         user = review.find('meta', attrs = attr_user)['content']
         date = review.find('meta', attrs = attr_date)['content']
@@ -112,14 +112,20 @@ def all_restaurants(client, query):
     for business in response.businesses:
         i += 1
         print i, '/', total, ':\n', business.url
-        results.extend(extract_reviews(business.url))
+        try:
+            results.extend(extract_reviews(business.url))
+        except Exception:
+            continue
     while i < total:
         param['offset'] = i
         response = client.search(query, **param)
         for business in response.businesses:
             i += 1
             print i, '/', total, ':\n', business.url
-            results.extend(extract_reviews(business.url))
+            try:
+                results.extend(extract_reviews(business.url))
+            except Exception:
+                continue
     return results
 
 if __name__ == '__main__':

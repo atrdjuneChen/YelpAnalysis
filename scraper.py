@@ -110,14 +110,14 @@ def all_restaurants(client, query):
     results = []
     i = 0
     for business in response.businesses:
+        i += 1
         print i, '/', total, ':\n', business.url
         results.extend(extract_reviews(business.url))
-    i = 1
     while i < total:
-        i += 1
-        param['offset'] = len(results)
+        param['offset'] = i
         response = client.search(query, **param)
         for business in response.businesses:
+            i += 1
             print i, '/', total, ':\n', business.url
             results.extend(extract_reviews(business.url))
     return results

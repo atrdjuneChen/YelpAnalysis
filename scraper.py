@@ -107,6 +107,8 @@ def all_restaurants(client, query):
     param = {'category_filter': 'restaurants'}
     response = client.search(query, **param)
     total = response.total
+    if total > 1000:
+        total = 1000
     results = []
     i = 0
     for business in response.businesses:

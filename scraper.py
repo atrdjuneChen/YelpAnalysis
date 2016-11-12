@@ -56,8 +56,7 @@ def parse_page(html, name = None, price = None, categories = None):
     if name == None:
         name = soup.find('h1').text.strip()
         price_category = soup.find('div', class_='price-category')
-        price = len(price_category.find('span', 'business-attribute price-range'))
-        categories = ','.join([c.text for c in price_category.find('span', 'category-str-list').findAll('a')])
+        price = len(price_category.find('span', class_='business-attribute price-range').text)
 
     for review in soup.findAll('div', attrs = attr_review):
         user = review.find('meta', attrs = attr_user)['content']
@@ -72,12 +71,13 @@ def parse_page(html, name = None, price = None, categories = None):
 
     return (name, price, categories, results, nextpage['href'])
 
-def extract_reviews(url):
+def extract_reviews(url, categories):
     """
     Retrieve ALL of the reviews for a single restaurant on Yelp.
 
     Parameters:
         url (string): Yelp URL corresponding to the restaurant of interest.
+        categories (string): The categories of the page.
 
     Returns:
         reviews (list): list of dictionaries containing extracted review information
@@ -85,7 +85,7 @@ def extract_reviews(url):
 
     # Write solution here
     html = requests.get(url).content
-    name, price, categories, allreviews, nextpage = parse_page(html)
+    name, price, categories, allreviews, nextpage = parse_page(html, categories = categories)
     while (nextpage != None):
         html = requests.get(nextpage).content
         _, _, _, reviews, nextpage = parse_page(html, name, price, categories)
@@ -93,7 +93,7 @@ def extract_reviews(url):
 
     return allreviews
 
-def all_restaurants(client, query):
+def all_restaurants(client, query, category = None):
     """
     Retrieve ALL the restaurants on Yelp for a given query.
 
@@ -104,20 +104,28 @@ def all_restaurants(client, query):
         results (list): list of yelp.obj.business.Business objects
     """
 
-    param = {'category_filter': 'restaurants'}
+    results = []
+    if category == None:
+        param = {'term': 'restaurants'}
+    else:
+        param = {'term': 'restaurants', 'category_filter': category}
+
     response = client.search(query, **param)
+
     total = response.total
     if total > 1000:
+        print 'Trying to get over 1000 records (%d), set to 1000' % total
         total = 1000
-    results = []
+
     i = 0
     for business in response.businesses:
         i += 1
         print i, '/', total, ':\n', business.url
         try:
-            results.extend(extract_reviews(business.url))
+            results.extend(extract_reviews(business.url, category))
         except Exception:
             continue
+
     while i < total:
         param['offset'] = i
         response = client.search(query, **param)
@@ -125,12 +133,18 @@ def all_restaurants(client, query):
             i += 1
             print i, '/', total, ':\n', business.url
             try:
-                results.extend(extract_reviews(business.url))
+                results.extend(extract_reviews(business.url, category))
             except Exception:
                 continue
     return results
 
 if __name__ == '__main__':
+    reviews = []
     client = authenticate('yelp.json')
-    reviews = all_restaurants(client, 'Pittsburgh')
+    with open('category.list', 'r') as category_file:
+        for line in category_file:
+            print line
+            if not line.startswith('#'):
+                reviews.extend(all_restaurants(client, 'Pittsburgh, PA', line.strip()))
+            time.sleep(0.2)
     pd.DataFrame(reviews).to_pickle('dataset.pickle')

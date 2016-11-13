@@ -1,5 +1,5 @@
 # setup library imports
-import io, time, json
+import io, time, json, random
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -56,7 +56,11 @@ def parse_page(html, name = None, price = None, categories = None):
     if name == None:
         name = soup.find('h1').text.strip()
         price_category = soup.find('div', class_='price-category')
-        price = len(price_category.find('span', class_='business-attribute price-range').text)
+        price_tag = price_category.find('span', class_='business-attribute price-range')
+        if price_tag == None:
+            price = -1
+        else:
+            price = len(price_tag.text)
 
     for review in soup.findAll('div', attrs = attr_review):
         user = review.find('meta', attrs = attr_user)['content']
@@ -83,13 +87,16 @@ def extract_reviews(url, categories):
         reviews (list): list of dictionaries containing extracted review information
     """
 
-    # Write solution here
     html = requests.get(url).content
     name, price, categories, allreviews, nextpage = parse_page(html, categories = categories)
     while (nextpage != None):
+        # wait a random time to avoid being detected scraper
+        time.sleep(0.5 + random.random())
         html = requests.get(nextpage).content
         _, _, _, reviews, nextpage = parse_page(html, name, price, categories)
         allreviews.extend(reviews)
+
+    print 'Extracted %d reviews from this business' % len(allreviews)
 
     return allreviews
 
@@ -124,6 +131,14 @@ def all_restaurants(client, query, category = None):
         try:
             results.extend(extract_reviews(business.url, category))
         except Exception:
+            print 'Oh maybe we are recognized as a robot'
+            raw_input('Visit Yelp and pass the validation, then press any key to continue')
+            try:
+                results.extend(extract_reviews(business.url, category))
+            except Exception:
+                print 'Failed, try again'
+                raw_input('press any key to continue')
+                continue
             continue
 
     while i < total:
@@ -135,16 +150,24 @@ def all_restaurants(client, query, category = None):
             try:
                 results.extend(extract_reviews(business.url, category))
             except Exception:
+                print 'Oh maybe we are recognized as a scraper'
+                raw_input('Visit Yelp and pass the validation, then press any key to continue')
+                try:
+                    results.extend(extract_reviews(business.url, category))
+                except Exception:
+                    print 'Failed, try again'
+                    raw_input('press any key to continue')
+                    continue
                 continue
     return results
 
 if __name__ == '__main__':
     reviews = []
+    random.seed(15688)
     client = authenticate('yelp.json')
     with open('category.list', 'r') as category_file:
         for line in category_file:
             print line
             if not line.startswith('#'):
                 reviews.extend(all_restaurants(client, 'Pittsburgh, PA', line.strip()))
-            time.sleep(0.2)
     pd.DataFrame(reviews).to_pickle('dataset.pickle')

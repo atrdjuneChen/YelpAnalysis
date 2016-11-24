@@ -1,6 +1,4 @@
-#
 # middle east asia
-#
 afghani
 arabian
 halal
@@ -10,9 +8,7 @@ mideastern
 pakistani
 persian
 syrian
-#
 # east asia
-#
 asianfusion
 chinese
 hkcafe
@@ -22,9 +18,7 @@ mongolian
 panasian
 taiwanese
 thai
-#
 # south asia
-#
 bangladeshi
 burmese
 cambodian
@@ -33,9 +27,7 @@ laotian
 malaysian
 singaporean
 vietnamese
-#
 # europe
-#
 austrian
 basque
 armenian
@@ -64,9 +56,7 @@ srilankan
 turkish
 ukrainian
 uzbek
-#
 # north american
-#
 newamerican
 tradamerican
 cajun
@@ -75,20 +65,12 @@ hawaiian
 mexican
 newmexican
 nicaraguan
-#
 # south american
-#
 argentine
 brazilian
 cuban
 latin
 peruvian
-#
-# australia
-#
-australian
-#
 # africa
-#
 african
 ethiopian
